@@ -1,0 +1,18 @@
+
+path {
+    fill: none;
+}
+
+.freeway {
+    stroke: orange;
+}
+
+.street {
+    stroke: gray;
+}
+
+.neighborhood {
+    opacity: .35;
+    stroke: black;
+    fill: green;
+}

@@ -10,7 +10,6 @@ define(['backbone',
             id:'app',
 
             initialize: function() {
-
                 console.log('application is now running...')
                 this.render();
             },

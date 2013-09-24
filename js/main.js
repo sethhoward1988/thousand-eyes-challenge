@@ -7,7 +7,10 @@ requirejs.config({
         'backbone': 'vendor/backbone',
         'underscore': 'vendor/underscore',
         'jquery': 'vendor/jquery',
-        'jqueryui': 'vendor/jquery-ui'
+        'jqueryui': 'vendor/jquery-ui',
+        'd3': 'vendor/d3',
+        'topojson': 'vendor/topojson'
+
         // 'jquery.customSelect': 'vendors/customSelect',
         // 'jquery.masonry': 'vendors/masonry',
     },
@@ -29,6 +32,14 @@ requirejs.config({
                 };
                 return _;
             }
+        },
+
+        'd3':{
+            exports: 'd3'
+        },
+
+        'topojson':{
+            exports: 'topojson'
         },
 
         'jquery':{
