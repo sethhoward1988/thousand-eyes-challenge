@@ -8,5 +8,5 @@ define(['views/appView'],
         }
 
         return AppController;
-
-});
+    }
+);

@@ -1,16 +1,23 @@
 requirejs.config({
+
+        baseUrl: 'js',
     
     paths:{
-        'text': 'js/vendor/text',
-        'backbone': 'js/vendor/backbone',
-        'underscore': 'js/vendor/underscore',
-        'jquery': 'js/vendor/jquery',
-        'jqueryui': 'js/vendor/jquery-ui'
+        'text': 'vendor/text',
+        'backbone': 'vendor/backbone',
+        'underscore': 'vendor/underscore',
+        'jquery': 'vendor/jquery',
+        'jqueryui': 'vendor/jquery-ui'
         // 'jquery.customSelect': 'vendors/customSelect',
         // 'jquery.masonry': 'vendors/masonry',
     },
 
     shim:{
+
+        'backbone': {
+            deps: ['underscore', 'jquery'],
+            exports: 'Backbone',
+        },
 
         'underscore':{
             exports: '_',
@@ -20,12 +27,20 @@ requirejs.config({
                     interpolate : /\{\{([\s\S]+?)\}\}/g,
                     evaluate: /\<\@(.+?)\@\>/gim
                 };
-                
+                return _;
             }
+        },
+
+        'jquery':{
+            exports: '$'
+        },
+
+        'jqueryui':{
+            deps:['jquery']
         }
     }
 });
 
-require(['appController'], function(AppController){
+requirejs(['app'], function(AppController){
     var ac = AppController();
 });
