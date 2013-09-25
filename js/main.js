@@ -10,16 +10,13 @@ requirejs.config({
         'jqueryui': 'vendor/jquery-ui',
         'd3': 'vendor/d3',
         'topojson': 'vendor/topojson'
-
-        // 'jquery.customSelect': 'vendors/customSelect',
-        // 'jquery.masonry': 'vendors/masonry',
     },
 
     shim:{
 
         'backbone': {
             deps: ['underscore', 'jquery'],
-            exports: 'Backbone',
+            exports: 'Backbone'
         },
 
         'underscore':{

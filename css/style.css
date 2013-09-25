@@ -5,6 +5,12 @@ path {
 
 .freeway {
     stroke: orange;
+    stroke-width: 3px;
+}
+
+.artery {
+    stroke: #555;
+    stroke-width:1px;
 }
 
 .street {
@@ -12,7 +18,10 @@ path {
 }
 
 .neighborhood {
-    opacity: .35;
+    opacity: .2;
     stroke: black;
-    fill: green;
+}
+
+.neighborhood:hover {
+    opacity: .5;
 }
