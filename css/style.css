@@ -25,3 +25,40 @@ path {
 .neighborhood:hover {
     opacity: .5;
 }
+
+.vehicle {
+    stroke: red;
+    stroke-width:5px;
+}
+
+.map {
+    position: relative;
+}
+
+svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.others {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.vehicles {
+    position: relative;
+}
+
+.vehicle {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    background-image: url('http://openclipart.org/people/milovanderlinden/milovanderlinden_Funny_Bus.svg');
+}
+
+.background {
+  fill: none;
+  pointer-events: all;
+}

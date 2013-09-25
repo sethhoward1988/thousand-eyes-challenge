@@ -17,11 +17,18 @@ define(['backbone',
 
             render: function () {
                 console.log('Rendering...')
-                this.controlView = new ControlView({ appView: this })
-                this.mapView = new MapView({ appView: this })
 
                 this.agencyCollection = new AgencyCollection()
+
+                this.controlView = new ControlView({ appView: this, agencyCollection: this.agencyCollection })
+                this.mapView = new MapView({ appView: this, agencyCollection: this.agencyCollection })
+                this.mapView.setupAgencies(this.agencyCollection)
                 this.agencyCollection.fetch()
+
+
+                
+
+
 
                 this.$el.append(this.controlView.$el)
                 this.$el.append(this.mapView.$el)

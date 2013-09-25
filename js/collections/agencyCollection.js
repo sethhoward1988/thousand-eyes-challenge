@@ -11,9 +11,23 @@ define(['backbone',
             console.log('initializing new agency')
         },
 
-        parse: function (response) {
-            console.log(data)
-            return data;
+        parse: function (data) {
+            var parsed = [];
+            $(data).find('agency').each(function (index, agency) {
+                parsed.push({
+                    tag: $(agency).attr('tag'),
+                    title: $(agency).attr('tag'),
+                    regionTitle: $(agency).attr('tag')
+                })
+            });
+
+            return parsed;
+        },
+
+        fetch: function (options) {
+            options = options || {};
+            options.dataType = "xml";
+            return Backbone.Collection.prototype.fetch.call(this, options);
         }
     });
 

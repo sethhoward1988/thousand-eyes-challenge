@@ -1137,14 +1137,6 @@
     // Default JSON-request options.
     var params = {type: type, dataType: 'json'};
     // Default JSON-request options.
-    if(type == 'read'){
-        var params = _.extend({
-         type:         type,
-         contentType:  'application/xml',
-         dataType:     'xml'
-       }, options);
-    }
-
     // Ensure that we have a URL.
     if (!options.url) {
       params.url = _.result(model, 'url') || urlError();
