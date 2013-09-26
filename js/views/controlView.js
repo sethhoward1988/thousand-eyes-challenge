@@ -1,6 +1,6 @@
-define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView', 'collections/routeCollection', 'text!templates/detailsTemplate.html'], 
+define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView', 'collections/routeCollection'], 
 
-    function (Backbone, controlTemplate, ControlRowView, RouteCollection, detailsTemplate) {
+    function (Backbone, controlTemplate, ControlRowView, RouteCollection) {
 
         var ControlView = Backbone.View.extend({
 
@@ -11,8 +11,6 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
             },
 
             rows: [],
-
-            template: _.template(detailsTemplate),
 
             initialize: function () {
                 this.render = _.bind(this.render, this)
@@ -74,14 +72,6 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
                 _.each(this.rows, function (row) {
                     row.toggleCheck(checked)
                 })
-            },
-
-            updateDetails: function (message) {
-                // this.details.empty()
-                // this.details.append(this.template({
-                //     message: message,
-                //     update: 'Map Updated '
-                // }))
             }
 
         })
