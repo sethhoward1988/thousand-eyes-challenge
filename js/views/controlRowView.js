@@ -1,4 +1,4 @@
-define(['backbone', 'text!../templates/routeRowTemplate.html',], 
+define(['backbone', 'text!templates/routeRowTemplate.html',], 
 
     function (Backbone, rowTemplate) {
 
