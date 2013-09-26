@@ -31,8 +31,22 @@ define(['backbone', 'text!templates/routeRowTemplate.html'],
                 }))
             },
 
+            setBackgroundColor: function () {
+                this.$el.css('background-color', this.routeColor)
+            },
+
             onCheckboxChange: function (evt) {
-                this.mapView.filterRoute(this.model.get('tag'), this.$el.find('.display-checkbox').prop('checked'))
+                var checked = this.$el.find('.display-checkbox').prop('checked')
+                this.mapView.filterRoute(this.model.get('tag'), checked)
+
+                if(checked){
+                    this.mapView.setRouteColorAssignment(this.model.get('tag'))
+                    this.routeColor = this.mapView.getRouteColorAssignment(this.model.get('tag'))
+                } else {
+                    this.routeColor = '#fff'
+                }
+                
+                this.setBackgroundColor()
             },
 
             onPlotClick: function () {

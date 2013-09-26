@@ -19,6 +19,16 @@ define(['backbone'], function(Backbone){
                     coordinates: [parseFloat(this.get('lon')), parseFloat(this.get('lat'))]
                 }
             })
+        },
+
+        parse: function (data) {
+            if(data.dirTag){
+                data.direction = data.dirTag.toLowerCase().indexOf('ob') != -1 ? 'Outbound' : 'Inbound'    
+            } else {
+                data.direction = 'N/A'
+            }
+            
+            return data
         }
 
     });

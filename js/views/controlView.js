@@ -6,8 +6,11 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
 
             el: controlTemplate,
 
+            busStopDetailsTemplate: _.template('<table></table>'),
+
             events: {
-                'keyup .filter-input': 'onFilterKeyup'
+                'keyup .filter-input': 'onFilterKeyup',
+                'click .glyphicon-remove-circle': 'onClickDetailsClose'
             },
 
             rows: [],
@@ -20,6 +23,7 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
                 this.mapView = this.options.mapView
 
                 this.list = this.$el.find('.route-list table tbody')
+                this.details = this.$el.find('.details')
 
                 // this.on('updateDetails', this.updateDetails)
 
@@ -52,6 +56,50 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
                 this.list.append(rowView.$el)
             },
 
+            getBusStopDetails: function (data) {
+                var that = this
+                this.details.slideDown(2000, 'easeOutBounce')
+                $.ajax({
+                    url:'http://webservices.nextbus.com/service/publicXMLFeed?command=predictions&a=sf-muni&stopId=' + data.id + '&routeTag=' + data.routeTag,
+                    dataType: "xml",
+                    type: 'get',
+                    success: function (resp) {
+                        var response = []
+                        _.each($(resp).find('direction'), function (direction){
+                            var times = []
+                            _.each($(direction).find('prediction'), function (prediction) {
+                                times.push(moment(parseFloat($(prediction).attr('epochTime'))))
+                            })
+                            response.push({
+                                title: $(direction).attr('title'),
+                                times: times
+                            })
+                        })
+                        that.populateDetailsPane(response, data)
+                    },
+                    error: function () {
+                        alert("Server didn't respond, can't get stop information")
+                    }
+                })
+            },
+
+            populateDetailsPane: function (response, data) {
+                var container = $('<div></div>')
+                var title = $('<h3></h3>').text(data.title)
+                container.append(title)
+                _.each(response, function (direction) {
+                    var directionHTML = $('<div></div>')
+                    var header = $('<h4></h4>').text(direction.title ? direction.title + ' Times' : 'Times')
+                    directionHTML.append(header)
+                    _.each(direction.times, function (time){
+                        var time = $('<span></span>').text(time.format('h:mm:ss a'))
+                        directionHTML.append(time)
+                    })
+                    container.append(directionHTML)
+                })
+                this.details.find('.window').empty().append(container)
+            },
+
             onFilterKeyup: function (evt) {
                 var rows = this.$el.find('.route-row')
                 var term = $(evt.target).val().toLowerCase()
@@ -71,6 +119,10 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
                 _.each(this.rows, function (row) {
                     row.toggleCheck(checked)
                 })
+            },
+
+            onClickDetailsClose: function () {
+                this.details.stop(true).slideUp()
             }
 
         })

@@ -8,6 +8,7 @@ requirejs.config({
         'moment':'vendor/moment',
         'underscore': 'vendor/underscore',
         'jquery': 'vendor/jquery',
+        'jquery-ui': 'vendor/jquery-ui',
         'bootstrap': 'vendor/bootstrap',
         'd3': 'vendor/d3',
         'topojson': 'vendor/topojson'
@@ -42,6 +43,10 @@ requirejs.config({
 
         'topojson':{
             exports: 'topojson'
+        },
+
+        'jquery-ui':{
+            deps: ['jquery']
         },
 
         'jquery':{

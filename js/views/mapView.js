@@ -1,4 +1,4 @@
-define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'underscore', 'moment'], 
+define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'underscore', 'moment', 'jquery-ui'], 
 
     function (mapTemplate) {
 
@@ -18,6 +18,11 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 '#9e0e40',
                 '#008080'
             ],
+
+            colorAssignments: {},
+
+            colorAssignmentIndex: 0,
+
             neighborhoodIndex: 0,
 
             el: mapTemplate,
@@ -25,11 +30,13 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
             tooltipTemplate: _.template('<table>' +
                                             '<tr><td>Bus Id: </td><td>{{ id }}</td></tr>' +
                                             '<tr><td>Route:</td><td>{{ route }}</td></tr>' +
+                                            '<tr><td>Direction:</td><td>{{ direction }}</td></tr>' +
                                         '</table>'),
 
             stopTooltipTemplate: _.template('<table>' +
                                                 '<tr><td colspan="2">{{ title }}</td></tr>' +
                                                 '<tr><td>Stop Id: </td><td>{{ id }}</td></tr>' +
+                                                '<tr><td colspan="2">Click for times</td></tr>' +
                                             '</table>'),
 
             events: {
@@ -39,6 +46,7 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 'click .right': 'onRightClick',
                 'click .bottom': 'onBottomClick',
                 'click .left': 'onLeftClick',
+                'click .details .glyphicon-remove-circle': 'onDetailsCloseClick',
                 'mouseover .vehicle': 'onVehicleMouseOver',
                 'mouseout .vehicle': 'onVehicleMouseout',
                 'mouseover .stop': 'onStopMouseOver',
@@ -61,10 +69,17 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 this.renderVehicles = _.chain(this.renderVehicles).bind(this).debounce(250).value()
                 this.getVehicleData = _.debounce(this.getVehicleData, 250)
                 this.onElementClick = _.bind(this.onElementClick, this)
+                this.zoomIn = _.bind(this.zoomIn, this)
+                this.zoomOut = _.bind(this.zoomOut, this)
+                this.zoomTo = _.bind(this.zoomTo, this)
+                this.onBodyKeyup = _.bind(this.onBodyKeyup, this)
+                this.onBusStopClick = _.bind(this.onBusStopClick, this)
+                
+                //Bind keyup for arrow events
+                $('body').on('keyup', this.onBodyKeyup)
 
-                this.zoomed = false;
-
-                this.centered = null;
+                this.zoomLevel = 0
+                this.centered = null
 
                 this.projection = d3.geo.mercator()
                     .center([-122.4358, 37.770])
@@ -178,6 +193,9 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
 
                 vehicleRendering.transition().duration(this.transitionDuration)
                     .style('opacity', 1)
+                    .style('stroke', function (d) { 
+                        return that.colorAssignments[d.properties.model.get('routeTag')] 
+                    })
                     .attr('cx', function (d) { return that.projection(d.geometry.coordinates)[0] })
                     .attr('cy', function (d) { return that.projection(d.geometry.coordinates)[1] })
 
@@ -192,38 +210,23 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 var that = this
 
                 var plotRendering = this.vehicles.selectAll('.stop')
-                    .data(this.currentPlot)
+                    .data(this.currentPlot, function (d) { return d.title })
 
-                plotRendering.enter().append('circle')
+                plotRendering.enter().append('polygon')
                     .style('opacity', 0)
                     .each(function (d) {
                         $(this).data('plot', d)
                     })
+                    .attr('points', function (d) { return d.points })
                     .attr('class', 'stop')
-                    .attr('cx', function (d) { 
-                        if(isNaN(d.x)){
-                            return d.x
-                        } else {
-                            return d.x
-                        }
-                    })
-                    .attr('cy', function (d) { 
-                        return d.y 
-                    })
-                    .attr('r', 3)
-                    .on("click", this.onElementClick)
+                    .on("click", this.onBusStopClick)
 
                 plotRendering.transition().duration(this.transitionDuration)
-                    .style('opacity', 1)
+                    .style('opacity', .8)
                     .each(function (d) {
                         $(this).data('stop', d)
                     })
-                    .attr('cx', function (d) { 
-                        return d.x 
-                    })
-                    .attr('cy', function (d) { 
-                        return d.y 
-                    })
+                    .attr('points', function (d) { return d.points })
 
                 plotRendering.exit().transition().duration(this.transitionDuration)
                     .style('opacity', 0)
@@ -274,49 +277,95 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 
             },
 
+            setRouteColorAssignment: function (tag) {
+                var color = this.neighborhoodColors[this.neighborhoodIndex]
+                this.neighborhoodIndex = (this.neighborhoodIndex + 1 == this.neighborhoodColors.length ? 0 : this.neighborhoodIndex + 1)
+                this.colorAssignments[tag] = color
+            },
+
+            getRouteColorAssignment: function (tag) {
+                return this.colorAssignments[tag]
+            },
+
             updateFooter: function () {
                 this.$el.find('.current-bus-count').text(this.realVehicleData.length + ' vehicles currently in operation').fadeIn()
                 this.$el.find('.update-time').text('Updated at ' + moment().format('h:mm:ss a')).fadeIn()
             },
 
-            zoom: function (d, retract, direction) {
-                var x, y, k = 6, that = this;
-
-                if(retract){
+            zoomOut: function () {
+                if(this.zoomLevel <= 0){ return }
+                if(this.zoomLevel == 1){
                     this.currentx = this.width / 2;
                     this.currenty = this.height / 2;
-                    k = 1;
-                    this.centered = null;
-                    this.zoomed = false;
                 }
+                this.zoomLevel--
+                this.k = this.zoomLevel == 0 ? 1 : this.zoomLevel * 2;
+                this.centered = null;
+                this.zoomed = false;
 
-                if (d && this.centered !== d) {
-                    this.zoomed = true;
-                    var centroid = this.path.centroid(d);
-                    this.currentx = centroid[0];
-                    this.currenty = centroid[1];
-                    this.centered = d;
+                this.translateMap()
+            },
+
+            zoomIn: function () {
+                if(this.zoomLevel >= 3) { return }
+                if(this.zoomLevel == 0){
+                    this.currentx = this.width / 2;
+                    this.currenty = this.height / 2;
                 }
+                this.zoomLevel++
+                this.k = this.zoomLevel * 2
+                this.translateMap()
+            },
 
-                if(this.zoomed && direction){
-                    if(direction == 'top'){
-                        this.currenty -= 50
-                    } else if(direction == 'right'){
-                        this.currentx += 50
-                    } else if(direction == 'bottom'){
-                        this.currenty += 50
-                    } else if(direction == 'left'){
-                        this.currentx -= 50
-                    }
+            zoomTo: function (d) {
+                if(this.zoomLevel == 0){
+                    this.zoomLevel = 1
+                } else if (this.zoomLevel == 1){
+                    this.zoomLevel = 2
+                } else if (this.zoomLevel == 2){
+                    this.zoomLevel = 3
                 }
+                this.k = this.zoomLevel * 2
+                var centroid = this.path.centroid(d)
+                this.currentx = centroid[0]
+                this.currenty = centroid[1]
+                this.centered = d
+                this.translateMap()
+            },
 
+            moveMap: function (direction) {
+                if(this.zoomLevel == 0){ return }
+                if(direction == 'top'){
+                    this.currenty -= 50
+                } else if(direction == 'right'){
+                    this.currentx += 50
+                } else if(direction == 'bottom'){
+                    this.currenty += 50
+                } else if(direction == 'left'){
+                    this.currentx -= 50
+                }
+                if(this.currentx < 0){
+                    this.currentx = 0
+                } else if (this.currentx > this.width){
+                    this.currentx = this.width
+                }
+                if(this.currenty < 0){
+                    this.currenty = 0
+                } else if (this.currenty > this.height){
+                    this.currenty = this.height
+                }
+                this.translateMap()
+            },
+
+            translateMap: function () {
+                var that = this
                 this.g.selectAll("path")
                     .classed("active", this.centered && function(d) { return d === that.centered; });
 
                 this.g.transition()
                     .duration(750)
-                    .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")scale(" + k + ")translate(" + -this.currentx + "," + -this.currenty + ")")
-                    .style("stroke-width", 1.5 / k + "px");
+                    .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")scale(" + this.k + ")translate(" + -this.currentx + "," + -this.currenty + ")")
+                    .style("stroke-width", 1.5 / this.k + "px");
             },
 
             filterRoute: function (tag, include) {
@@ -335,13 +384,48 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 
                 _.each(model.stops, function (stop) {
                     if(stop.lon && stop.lat){
+
                         var coordinates = that.projection([parseFloat(stop.lon), parseFloat(stop.lat)])
+                        var centerx = coordinates[0]
+                        var centery = coordinates[1]
+                        if(stop.title.toLowerCase().indexOf('inbound') != -1 || stop.title.toLowerCase().indexOf('ib') != -1){
+                            centery -= 5
+                        } else if (stop.title.toLowerCase().indexOf('outbound') != -1 || stop.title.toLowerCase().indexOf('ob') != -1){
+                            centerx += 5
+                        }
+                        var radius = 4
+
+                        var topx = centerx 
+                        var topy = centery - radius
+
+                        var toprightx = centerx + radius
+                        var toprighty = centery - (radius/2)
+
+                        var bottomrightx = centerx + radius
+                        var bottomrighty = centery + (radius/2)
+
+                        var bottomx = centerx
+                        var bottomy = centery + radius
+
+                        var bottomleftx = centerx - radius
+                        var bottomlefty = centery + (radius/2)
+
+                        var topleftx = centerx - radius
+                        var toplefty = centery - (radius/2)
+
+                        var string =    topx + ',' + topy + ' ' +
+                                        toprightx + ',' + toprighty + ' ' +
+                                        bottomrightx + ',' + bottomrighty + ' ' +
+                                        bottomx + ',' + bottomy + ' ' +
+                                        bottomleftx + ',' + bottomlefty + ' ' +
+                                        topleftx + ',' + toplefty
+
                         that.currentPlot.push({
                             type: 'point',
-                            x: coordinates[0],
-                            y: coordinates[1],
+                            points: string,
                             title: stop.title,
-                            id: stop.stopId
+                            id: stop.stopId,
+                            routeTag: model.get('tag')
                         })
                     }
                 })
@@ -366,7 +450,8 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 } else {
                     this.tooltip.append(this.tooltipTemplate({
                         id: model.get('id'),
-                        route: model.get('routeTag')
+                        route: model.get('routeTag'),
+                        direction: model.get('direction')
                     }))
                 }
 
@@ -413,10 +498,34 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 this.destroyTooltip()
             },
 
+            onBusStopClick: function (data) {
+                this.options.appView.controlView.getBusStopDetails(data)
+            },
+
             onStopMouseOver: function (evt) {
                 var data = $(evt.target).data('stop')
                 var position = $(evt.target).position()
                 this.setTooltip(data, position.top, position.left, true)
+            },
+
+            onBodyKeyup: function (evt) {
+                if(evt.keyCode == 38){
+                    this.onTopClick()
+                    evt.preventDefault()
+                } else if (evt.keyCode == 39) {
+                    this.onRightClick()
+                    evt.preventDefault()
+                } else if (evt.keyCode == 40) {
+                    this.onBottomClick()
+                    evt.preventDefault()
+                } else if (evt.keyCode == 37) {
+                    this.onLeftClick()
+                    evt.preventDefault()
+                }
+            },
+
+            onDetailsCloseClick: function () {
+                this.details.slideUp()
             },
 
             onStopMouseout: function (evt) {
@@ -424,33 +533,31 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
             },
 
             onElementClick: function (d) {
-                this.zoom(d)
+                this.zoomTo(d)
             },
 
             onMagnifyClick: function () {
-                var neighborhoods = $('.neighborhood')
-                var d = $(neighborhoods[Math.round(neighborhoods.length / 2)]).data()
-                this.zoom(d)
+                this.zoomIn()
             },
 
             onRetractClick: function () {
-                this.zoom(false, true)
+                this.zoomOut()
             },
 
             onTopClick: function () {
-                this.zoom(false, false, 'top')
+                this.moveMap('top')
             },
 
             onRightClick: function () {
-                this.zoom(false, false, 'right')
+                this.moveMap('right')
             },
 
             onBottomClick: function () {
-                this.zoom(false, false, 'bottom')
+                this.moveMap('bottom')
             },
 
             onLeftClick: function () {
-                this.zoom(false, false, 'left')
+                this.moveMap('left')
             }
 
         })
