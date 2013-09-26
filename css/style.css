@@ -189,13 +189,11 @@ svg {
 }
 
 .route-list {
-    height: 600px;
+    height: 350px;
     width: 325px;
     padding: 5px;
     overflow: scroll;
     border: 1px solid #ccc;
-    border-bottom-left-radius: 5px;
-    border-bottom-right-radius: 5px;
     border-top: none;
 }
 
@@ -203,15 +201,24 @@ svg {
     width: 100%;
 }
 
-/*.details {
-    height: 230px;
+.legend {
+    height: 223px;
     width: 325px;
     padding: 15px;
     border:1px solid #ccc;
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
-    margin-top:30px;
-}*/
+    margin-top:25px;
+}
+
+.legend h2{
+    border-bottom: 1px solid #ccc;
+}
+
+.legend table {
+    font-size: 13px;
+    height: 135px;
+}
 
 .update-time, .current-bus-count {
     display: none;
