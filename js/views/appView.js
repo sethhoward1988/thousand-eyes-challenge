@@ -16,8 +16,6 @@ define(['backbone',
             },
 
             render: function () {
-                console.log('Rendering...')
-
                 this.agencyCollection = new AgencyCollection()
 
                 this.mapView = new MapView({ appView: this, agencyCollection: this.agencyCollection })

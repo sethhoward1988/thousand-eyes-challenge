@@ -6,7 +6,7 @@ define(['backbone',
         model: Route,
 
         initialize: function () {
-            console.log('initializing new route Collection')
+            
         },
 
         setURL: function (agency) {

@@ -200,8 +200,16 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                         $(this).data('plot', d)
                     })
                     .attr('class', 'stop')
-                    .attr('cx', function (d) { return d.x })
-                    .attr('cy', function (d) { return d.y })
+                    .attr('cx', function (d) { 
+                        if(isNaN(d.x)){
+                            return d.x
+                        } else {
+                            return d.x
+                        }
+                    })
+                    .attr('cy', function (d) { 
+                        return d.y 
+                    })
                     .attr('r', 3)
                     .on("click", this.onElementClick)
 
@@ -210,8 +218,12 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                     .each(function (d) {
                         $(this).data('stop', d)
                     })
-                    .attr('cx', function (d) { return d.x })
-                    .attr('cy', function (d) { return d.y })
+                    .attr('cx', function (d) { 
+                        return d.x 
+                    })
+                    .attr('cy', function (d) { 
+                        return d.y 
+                    })
 
                 plotRendering.exit().transition().duration(this.transitionDuration)
                     .style('opacity', 0)
@@ -322,14 +334,16 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 this.currentPlot = []
                 
                 _.each(model.stops, function (stop) {
-                    var coordinates = that.projection([parseFloat(stop.lon), parseFloat(stop.lat)])
-                    that.currentPlot.push({
-                        type: 'point',
-                        x: coordinates[0],
-                        y: coordinates[1],
-                        title: stop.title,
-                        id: stop.stopId
-                    })
+                    if(stop.lon && stop.lat){
+                        var coordinates = that.projection([parseFloat(stop.lon), parseFloat(stop.lat)])
+                        that.currentPlot.push({
+                            type: 'point',
+                            x: coordinates[0],
+                            y: coordinates[1],
+                            title: stop.title,
+                            id: stop.stopId
+                        })
+                    }
                 })
 
                 this.renderPlot()

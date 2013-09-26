@@ -53,7 +53,6 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
             },
 
             onFilterKeyup: function (evt) {
-                console.log('filter keying up')
                 var rows = this.$el.find('.route-row')
                 var term = $(evt.target).val().toLowerCase()
                 _.each(rows, function (row) {

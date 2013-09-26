@@ -7,7 +7,6 @@ define(['backbone', 'collections/vehicleCollection', 'collections/routeCollectio
         
         initialize: function () {
             if(_.indexOf(this.approvedAgencies, this.get('tag')) != -1 ){
-                console.log('creating vehicle collection...')
                 this.vehicleCollection = new VehicleCollection()
                 this.vehicleCollection.setAgency(this)
                 this.vehicleCollection.update()

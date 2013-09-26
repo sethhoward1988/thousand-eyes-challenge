@@ -26,7 +26,6 @@ define(['backbone',
         },
 
         parse: function (data) {
-            console.log("collection length: " + this.models.length)
             var that = this;
             var parsed = []
             $(data).find('vehicle').each(function (index, vehicle) {

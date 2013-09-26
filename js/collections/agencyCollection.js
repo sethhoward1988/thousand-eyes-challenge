@@ -8,7 +8,7 @@ define(['backbone',
         url:'http://webservices.nextbus.com/service/publicXMLFeed?command=agencyList',
 
         initialize: function () {
-            console.log('initializing new agency')
+            
         },
 
         parse: function (data) {
