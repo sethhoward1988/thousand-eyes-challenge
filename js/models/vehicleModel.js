@@ -11,6 +11,7 @@ define(['backbone'], function(Backbone){
 
         update: function () {
             this.set('feature', {
+                id: this.get('id'),
                 type: "Feature",
                 properties: { model: this },
                 geometry: { 

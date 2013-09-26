@@ -1,4 +1,44 @@
 
+/* Sticky footer styles
+-------------------------------------------------- */
+
+html,
+body {
+  height: 100%;
+  /* The html and body elements cannot have any padding or margin. */
+}
+
+/* Wrapper for page content to push down footer */
+#wrap {
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  /* Negative indent footer by its height */
+  margin: 0 auto -80px;
+  /* Pad bottom by footer height */
+  padding: 0 0 80px;
+}
+
+/* Set the fixed height of the footer here */
+.footer {
+  height: 80px;
+  background-color: #f5f5f5;
+}
+
+#app {
+    margin: 20px 0px;
+}
+
+.content {
+    width: 980px;
+    margin: 0 auto;
+}
+
+body, h1, h2, h3, h4, h5, h6 {
+    font-family: 'Raleway', sans-serif;
+    font-weight: 100
+}
+
 path {
     fill: none;
 }
@@ -27,8 +67,20 @@ path {
 }
 
 .vehicle {
+    fill: #242b32;
+    stroke: #19af90;
+    stroke-width:1px;
+}
+
+.stop {
+    fill: #242b32;
     stroke: red;
-    stroke-width:5px;
+    stroke-width:1px;    
+}
+
+button.plot.active {
+    background-color: #242b32;
+    color: white;
 }
 
 .map {
@@ -51,14 +103,128 @@ svg {
     position: relative;
 }
 
-.vehicle {
-    position: absolute;
-    width: 32px;
-    height: 32px;
-    background-image: url('http://openclipart.org/people/milovanderlinden/milovanderlinden_Funny_Bus.svg');
-}
-
 .background {
-  fill: none;
+  fill: white;
   pointer-events: all;
 }
+
+.map {
+    border: 1px solid #ccc;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    overflow: hidden;
+}
+
+.map-controls {
+    border-top: 1px solid #ccc;
+    padding: 10px;
+    background: rgb(249,249,249); /* Old browsers */
+    background: -moz-linear-gradient(top,  rgba(249,249,249,1) 0%, rgba(238,238,238,1) 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(249,249,249,1)), color-stop(100%,rgba(238,238,238,1))); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  rgba(249,249,249,1) 0%,rgba(238,238,238,1) 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  rgba(249,249,249,1) 0%,rgba(238,238,238,1) 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  rgba(249,249,249,1) 0%,rgba(238,238,238,1) 100%); /* IE10+ */
+    background: linear-gradient(to bottom,  rgba(249,249,249,1) 0%,rgba(238,238,238,1) 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f9f9f9', endColorstr='#eeeeee',GradientType=0 ); /* IE6-9 */
+}
+
+.svg-container {
+    position: relative;
+}
+
+.svg-container .btn-group-vertical {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 1;
+}
+
+.svg-container .arrows {
+    top: 105px;
+}
+
+.svg-container .btn-group-vertical button span {
+    padding: 5px 0px;
+    text-align: center;
+}
+
+.header, .footer {
+    background-color: #242b32;
+    color: white;
+}
+
+.footer {
+    text-align: center; 
+}
+
+.header-wrapper {
+    background-color: #19af90;
+    height: 10px;
+    width: 100%;
+}
+
+.footer-wrapper {
+    background-color: #000;
+    height: 10px;
+    width: 100%;
+}
+
+
+.header {
+    padding: 30px;
+}
+
+.footer .content {
+    margin-top: 10px;
+}
+
+.filter-input {
+    padding:10px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.filter {
+    border-bottom: 1px solid #ccc;
+}
+
+.route-list {
+    height: 600px;
+    width: 325px;
+    padding: 5px;
+    overflow: scroll;
+    border: 1px solid #ccc;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-top: none;
+}
+
+.route-list table {
+    width: 100%;
+}
+
+/*.details {
+    height: 230px;
+    width: 325px;
+    padding: 15px;
+    border:1px solid #ccc;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    margin-top:30px;
+}*/
+
+.update-time, .current-bus-count {
+    display: none;
+}
+
+.tooltip {
+    padding: 5px;
+    position: absolute;
+    z-index: 10;
+    height: 55px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: white;
+    opacity: 0;
+}
+

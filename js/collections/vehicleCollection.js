@@ -13,25 +13,8 @@ define(['backbone',
 
         update: function () {
             var that = this
-            this.fetch({success: function(collection, resp){ 
-                _.each(that.parse(resp), function (vehicle) {
-                    var model = collection.find(function (bus) { return bus.get('id') == vehicle.id })
-                    if(model){
-                        model.set({
-                            routeTag: vehicle.routeTag,
-                            dirTag: vehicle.dirTag,
-                            lat: vehicle.lat,
-                            lon: vehicle.lon,
-                            speedKmHr: vehicle.speedKmHr,
-                            passengerCount: vehicle.passengerCount
-                        })
-                    } else {
-                        collection.add(vehicle)
-                    }
-                })
-                collection.trigger('change')
-                setTimeout(that.update, 15000)
-            }})
+            this.fetch()
+            setTimeout(that.update, 15000)
         },
 
         setAgency: function (agency) {

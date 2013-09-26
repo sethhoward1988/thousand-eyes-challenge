@@ -1,12 +1,12 @@
-define(['backbone', 'd3', 'topojson', 'underscore'], 
+define(['text!/templates/mapTemplate.html','backbone', 'd3', 'topojson', 'underscore', 'moment'], 
 
-    function () {
+    function (mapTemplate) {
 
         var MapView = Backbone.View.extend({
 
             transitionDuration: 1000,
-            width: 900,
-            height: 900,
+            width: 600,
+            height: 600,
             neighborhoodColors: [
                 '#ffdb8f',
                 '#ebbbb1',
@@ -20,26 +20,55 @@ define(['backbone', 'd3', 'topojson', 'underscore'],
             ],
             neighborhoodIndex: 0,
 
-            className: 'map',
+            el: mapTemplate,
+
+            tooltipTemplate: _.template('<table>' +
+                                            '<tr><td>Bus Id: </td><td>{{ id }}</td></tr>' +
+                                            '<tr><td>Route:</td><td>{{ route }}</td></tr>' +
+                                        '</table>'),
+
+            stopTooltipTemplate: _.template('<table>' +
+                                                '<tr><td colspan="2">{{ title }}</td></tr>' +
+                                                '<tr><td>Stop Id: </td><td>{{ id }}</td></tr>' +
+                                            '</table>'),
+
+            events: {
+                'click .magnify': 'onMagnifyClick',
+                'click .retract': 'onRetractClick',
+                'click .top': 'onTopClick',
+                'click .right': 'onRightClick',
+                'click .bottom': 'onBottomClick',
+                'click .left': 'onLeftClick',
+                'mouseover .vehicle': 'onVehicleMouseOver',
+                'mouseout .vehicle': 'onVehicleMouseout',
+                'mouseover .stop': 'onStopMouseOver',
+                'mouseout .stop': 'onStopMouseout'
+            },
+
+            routes: [],
 
             initialize: function () {
-                this.$el.addClass(this.className)
+                this.$el.css({width: this.width})
                 this.setup()
                 this.setData()
             },
+
+            // Map Setup ----------------------------------------------------
 
             setup: function () {
                 
                 this.addAgency = _.bind(this.addAgency, this)
                 this.renderVehicles = _.chain(this.renderVehicles).bind(this).debounce(250).value()
                 this.getVehicleData = _.debounce(this.getVehicleData, 250)
-                this.clicked = _.bind(this.clicked, this)
+                this.onElementClick = _.bind(this.onElementClick, this)
+
+                this.zoomed = false;
 
                 this.centered = null;
 
                 this.projection = d3.geo.mercator()
-                    .center([-122.4383, 37.760])
-                    .scale(283772)
+                    .center([-122.4358, 37.770])
+                    .scale(210000)
                     // .scale((1 << 22) / 2 / Math.PI)
                     .translate([this.width / 2, this.height / 2])
 
@@ -49,7 +78,12 @@ define(['backbone', 'd3', 'topojson', 'underscore'],
                 this.path = d3.geo.path()
                     .projection(this.projection)
 
-                this.svg = d3.select(this.el).append("svg")
+                this.tooltip = $('<div class="tooltip"></div>')
+                this.$el.find('.svg-container').append(this.tooltip)
+
+                this.$el.find('.svg-container').css({width: this.width, height: this.height})
+
+                this.svg = d3.select(this.$el.find('.svg-container')[0]).append("svg")
                     .attr("width", this.width)
                     .attr("height", this.height)
 
@@ -57,13 +91,22 @@ define(['backbone', 'd3', 'topojson', 'underscore'],
                     .attr("class", "background")
                     .attr("width", this.width)
                     .attr("height", this.height)
-                    .on("click", this.clicked);
+                    .on("click", this.onElementClick);
 
                 this.g = this.svg.append('g')
             },
 
+            setupAgencies: function (agencyCollection) {
+                this.agencyCollection = agencyCollection
+                this.agencyCollection.on('add', this.addAgency)
+            },
+
+
+            // Rendering Methods ----------------------------------------------------
+
             render: function () {
                 var that = this;
+
                 this.g.append("g")
                       .attr("class", "streets")
                     .selectAll("path")
@@ -71,19 +114,6 @@ define(['backbone', 'd3', 'topojson', 'underscore'],
                     .enter().append("path")
                         .attr('class','street')
                         .attr("d", this.path)
-
-                this.g.append("g").attr('class','neighborhoods')
-                    .selectAll('path')
-                        .data(topojson.feature(this.data, this.data.objects.neighborhoods).features)
-                    .enter().append('path')
-                        .attr("class", "neighborhood")
-                        .attr("d", this.path)
-                        .style('fill', function (d) {
-                            var color = that.neighborhoodColors[that.neighborhoodIndex]
-                            that.neighborhoodIndex = (that.neighborhoodIndex + 1 == that.neighborhoodColors.length ? 0 : that.neighborhoodIndex + 1)
-                            return color;
-                        })
-                        .on("click", this.clicked);
 
                 this.g.append("g").attr('class','freeways')
                     .selectAll('path')
@@ -99,108 +129,110 @@ define(['backbone', 'd3', 'topojson', 'underscore'],
                         .attr("class", "artery")
                         .attr("d", this.path)
 
-                this.setVehicleData()
-
-                this.vehicles = this.g.append('g').attr('class', 'vehicles')
+                this.g.append("g").attr('class','neighborhoods')
                     .selectAll('path')
-                        .data(this.realVehicleData, function (d) { 
-                            return d.properties.model.get('id')
+                        .data(topojson.feature(this.data, this.data.objects.neighborhoods).features)
+                    .enter().append('path')
+                        .each(function (d) {
+                            $(this).data(d)
                         })
+                        .attr("class", "neighborhood")
+                        .attr("d", this.path)
+                        .style('fill', function (d) {
+                            var color = that.neighborhoodColors[that.neighborhoodIndex]
+                            that.neighborhoodIndex = (that.neighborhoodIndex + 1 == that.neighborhoodColors.length ? 0 : that.neighborhoodIndex + 1)
+                            return color;
+                        })
+                        .on("click", this.onElementClick);
                 
+                // Needs to be created here so that vehicles appear on top of everything
+                this.plot = this.g.append('g').attr('class', 'route-plot')
 
-
+                this.renderVehicles()
             },
 
-            clicked: function (d) {
-                    var x, y, k, that = this;
+            renderVehicles: function () {
+                var that = this
+                
+                that.setVehicleData()
 
-                  if (d && this.centered !== d) {
-                    var centroid = this.path.centroid(d);
-                    x = centroid[0];
-                    y = centroid[1];
-                    k = 4;
-                    this.centered = d;
-                  } else {
-                    x = this.width / 2;
-                    y = this.height / 2;
-                    k = 1;
-                    this.centered = null;
-                  }
+                if(!this.vehicles) {
+                    this.vehicles = this.g.append('g').attr('class', 'vehicles')
+                }
 
-                  this.g.selectAll("path")
-                      .classed("active", this.centered && function(d) { return d === that.centered; });
+                var vehicleRendering = this.vehicles.selectAll('.vehicle')
+                    .data(this.realVehicleData, function (d) { 
+                        return d.id
+                    })
 
-                  this.g.transition()
-                      .duration(750)
-                      .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-                      .style("stroke-width", 1.5 / k + "px");
+                vehicleRendering.enter().append('circle')
+                    .style('opacity', 0)
+                    .each(function (d) {
+                        $(this).data('vehicle', d)
+                    })
+                    .attr('class', 'vehicle')
+                    .attr('cx', function (d) { return that.projection(d.geometry.coordinates)[0] })
+                    .attr('cy', function (d) { return that.projection(d.geometry.coordinates)[1] })
+                    .attr('r', 3)
+                    .on("click", this.onElementClick)
+
+                vehicleRendering.transition().duration(this.transitionDuration)
+                    .style('opacity', 1)
+                    .attr('cx', function (d) { return that.projection(d.geometry.coordinates)[0] })
+                    .attr('cy', function (d) { return that.projection(d.geometry.coordinates)[1] })
+
+                vehicleRendering.exit().transition().duration(this.transitionDuration)
+                    .style('opacity', 0)
+                    .remove()
+
+                this.updateFooter()
             },
 
-            setupAgencies: function (agencyCollection) {
-                this.agencyCollection = agencyCollection
-                this.agencyCollection.on('add', this.addAgency)
+            renderPlot: function () {
+                var that = this
+
+                var plotRendering = this.vehicles.selectAll('.stop')
+                    .data(this.currentPlot)
+
+                plotRendering.enter().append('circle')
+                    .style('opacity', 0)
+                    .each(function (d) {
+                        $(this).data('plot', d)
+                    })
+                    .attr('class', 'stop')
+                    .attr('cx', function (d) { return d.x })
+                    .attr('cy', function (d) { return d.y })
+                    .attr('r', 3)
+                    .on("click", this.onElementClick)
+
+                plotRendering.transition().duration(this.transitionDuration)
+                    .style('opacity', 1)
+                    .each(function (d) {
+                        $(this).data('stop', d)
+                    })
+                    .attr('cx', function (d) { return d.x })
+                    .attr('cy', function (d) { return d.y })
+
+                plotRendering.exit().transition().duration(this.transitionDuration)
+                    .style('opacity', 0)
+                    .remove()
+
+                this.updateFooter()
             },
+
+            
+
+            // Util Methods ----------------------------------------------------
 
             addAgency: function (agency) {
                 var that = this
                 if(agency.vehicleCollection){
                     agency.vehicleCollection.on('change', function (collection) {
-                        that.setVehicleData()
                         that.renderVehicles()
                     })
                 }
             },
-
-            setVehicleData: function () {
-                var that = this;
-                this.agencyCollection.each(function (agency) {
-                    if(agency.vehicleCollection){
-                        agency.vehicleCollection.each(function(vehicle){
-                            that.vehicleData[vehicle.get('id')] = vehicle.get('feature')
-                        })
-                    }
-                })
-                var data = []
-                for(prop in that.vehicleData){
-                    data.push(that.vehicleData[prop])
-                }
-                this.realVehicleData = data
-                
-            },
-
-            renderVehicles: function () {
-                var that = this
-                    
-                this.vehicles
-                    .enter().append('g')
-                        .each(function(){
-                            $(this).append(
-                                '<rect style="opacity:1;fill:#333333;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" id="rect3165" width="6.2608695" height="10.92174" x="-9.6695652" y="20.591305" ry="3.1304348" transform="scale(-1,1)"/>' +
-                                '<rect style="opacity:1;fill:#333333;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" id="rect3167" width="6.2608695" height="10.92174" x="-28.765223" y="20.591305" ry="3.1304348" transform="scale(-1,1)"/>' +
-                                '<path style="fill:#ff7c05;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M 7.7110875,1.3015295 L 23.245434,1.1623991 C 27.721268,1.1623991 30.489775,4.2787317 30.489775,8.7545661 L 30.768035,23.384564 C 30.768035,27.860399 27.651703,29.098471 23.175869,29.098471 L 8.824131,29.098471 C 4.3482966,29.098471 1.7189206,28.069095 1.7189206,23.59326 L 1.5102249,8.8241313 C 1.5102249,4.3482969 3.2352531,1.3015295 7.7110875,1.3015295 z" id="rect2383" sodipodi:nodetypes="ccccccccc"/>' +
-                                '<path style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1" d="M 7.0260868,4.4521737 C 11.809714,1.8057852 22.282712,2.2145298 25.113045,4.4521737 C 27.993838,6.342034 31.869013,16.047546 27.478262,17.87826 C 20.437994,20.548588 12.70158,18.895489 5.9130433,16.556522 C 1.0646445,14.802088 3.6236147,6.5654362 7.0260868,4.4521737 z" id="rect3169" sodipodi:nodetypes="ccccc"/>' +
-                                '<path sodipodi:type="arc" style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" id="path3172" sodipodi:cx="5.5999999" sodipodi:cy="22.608696" sodipodi:rx="2.2608695" sodipodi:ry="2.2956522" d="M 7.8608694,22.608696 A 2.2608695,2.2956522 0 1 1 3.3391304,22.608696 A 2.2608695,2.2956522 0 1 1 7.8608694,22.608696 z" transform="translate(2.3652174,-0.3478261)"/>' +
-                                '<path sodipodi:type="arc" style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" id="path3174" sodipodi:cx="22.504349" sodipodi:cy="23.443478" sodipodi:rx="2.4695652" sodipodi:ry="2.5739131" d="M 24.973914,23.443478 A 2.4695652,2.5739131 0 1 1 20.034784,23.443478 A 2.4695652,2.5739131 0 1 1 24.973914,23.443478 z"/>'
-                            )
-                        })
-                        
-
-                // this.vehicles.enter().append("div")
-                //     .style('opacity', 0)
-                //     .attr('class', 'vehicle')
-                //     .each(function (d) {
-                //         var coordinates = that.projection(d.geometry.coordinates)
-                //         $(this).css({
-                //             top: coordinates[1],
-                //             left: coordinates[0],
-                //         })
-                //     })
-
-                this.vehicles.exit().transition().duration(this.transitionDuration)
-                    .style('opacity', 0)
-                    .remove()
-            },
-
+            
             setData: function () {
                 var that = this;
 
@@ -211,6 +243,201 @@ define(['backbone', 'd3', 'topojson', 'underscore'],
                     that.render()
                 })
             },
+
+            setVehicleData: function () {
+                var that = this;
+                var updateTime = +new Date()
+                this.realVehicleData = []
+
+                this.agencyCollection.each(function (agency) {
+                    if(agency.vehicleCollection){
+                        agency.vehicleCollection.each(function(vehicle){
+                            var feature = vehicle.get('feature')
+                            if(_.indexOf(that.routes, vehicle.get('routeTag')) != -1){
+                                that.realVehicleData.push(vehicle.get('feature'))
+                            }
+                        })
+                    }
+                })
+                
+            },
+
+            updateFooter: function () {
+                this.$el.find('.current-bus-count').text(this.realVehicleData.length + ' vehicles currently in operation').fadeIn()
+                this.$el.find('.update-time').text('Updated at ' + moment().format('h:mm:ss a')).fadeIn()
+            },
+
+            zoom: function (d, retract, direction) {
+                var x, y, k = 6, that = this;
+
+                if(retract){
+                    this.currentx = this.width / 2;
+                    this.currenty = this.height / 2;
+                    k = 1;
+                    this.centered = null;
+                    this.zoomed = false;
+                }
+
+                if (d && this.centered !== d) {
+                    this.zoomed = true;
+                    var centroid = this.path.centroid(d);
+                    this.currentx = centroid[0];
+                    this.currenty = centroid[1];
+                    this.centered = d;
+                }
+
+                if(this.zoomed && direction){
+                    if(direction == 'top'){
+                        this.currenty -= 50
+                    } else if(direction == 'right'){
+                        this.currentx += 50
+                    } else if(direction == 'bottom'){
+                        this.currenty += 50
+                    } else if(direction == 'left'){
+                        this.currentx -= 50
+                    }
+                }
+
+                this.g.selectAll("path")
+                    .classed("active", this.centered && function(d) { return d === that.centered; });
+
+                this.g.transition()
+                    .duration(750)
+                    .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")scale(" + k + ")translate(" + -this.currentx + "," + -this.currenty + ")")
+                    .style("stroke-width", 1.5 / k + "px");
+            },
+
+            filterRoute: function (tag, include) {
+                if(include){
+                    this.routes = _.union(this.routes, [tag])
+                } else {
+                    var index = _.indexOf(this.routes, tag)
+                    this.routes.splice(index, 1)
+                }
+                this.renderVehicles()
+            },
+
+            plotRoute: function (model) {
+                var that = this
+                this.currentPlot = []
+                
+                _.each(model.stops, function (stop) {
+                    var coordinates = that.projection([parseFloat(stop.lon), parseFloat(stop.lat)])
+                    that.currentPlot.push({
+                        type: 'point',
+                        x: coordinates[0],
+                        y: coordinates[1],
+                        title: stop.title,
+                        id: stop.stopId
+                    })
+                })
+
+                this.renderPlot()
+            },
+
+            clearPlot: function () {
+                this.currentPlot = []
+                this.renderPlot()
+            },
+
+            setTooltip: function (model, top, left, stop) {
+                var that = this;
+                this.tooltip.empty()
+
+                if(stop){
+                    this.tooltip.append(this.stopTooltipTemplate({
+                        title: model.title,
+                        id: model.id
+                    }))
+                } else {
+                    this.tooltip.append(this.tooltipTemplate({
+                        id: model.get('id'),
+                        route: model.get('routeTag')
+                    }))
+                }
+
+                top -= this.tooltip.height() + 20
+                left += 15
+
+                if(this.tooltip.css('opacity') == 0){
+                    // If it's totally faded out, let's move it so the next fade in doesn't
+                    // look so dramatic
+                    this.tooltip.css({
+                        zIndex: 1,
+                        top: top - 50,
+                        left: left + 50
+                    })
+                }
+                
+                this.tooltip.stop(true)
+                this.tooltip.animate({
+                    top: top,
+                    left: left,
+                    opacity: 1
+                })
+            },
+
+            destroyTooltip: function () {
+                var position = this.tooltip.position()
+                this.tooltip.animate({
+                    opacity: 0,
+                    zIndex: 0,
+                    top: position.top - 50,
+                    left: position.left + 50
+                })
+            },
+
+            // UI EVENTS ----------------------------------------------------
+
+            onVehicleMouseOver: function (evt) {
+                var model = $(evt.target).data('vehicle').properties.model
+                var position = $(evt.target).position()
+                this.setTooltip(model, position.top, position.left)
+            },
+
+            onVehicleMouseout: function (evt) {
+                this.destroyTooltip()
+            },
+
+            onStopMouseOver: function (evt) {
+                var data = $(evt.target).data('stop')
+                var position = $(evt.target).position()
+                this.setTooltip(data, position.top, position.left, true)
+            },
+
+            onStopMouseout: function (evt) {
+                this.destroyTooltip()
+            },
+
+            onElementClick: function (d) {
+                this.zoom(d)
+            },
+
+            onMagnifyClick: function () {
+                var neighborhoods = $('.neighborhood')
+                var d = $(neighborhoods[Math.round(neighborhoods.length / 2)]).data()
+                this.zoom(d)
+            },
+
+            onRetractClick: function () {
+                this.zoom(false, true)
+            },
+
+            onTopClick: function () {
+                this.zoom(false, false, 'top')
+            },
+
+            onRightClick: function () {
+                this.zoom(false, false, 'right')
+            },
+
+            onBottomClick: function () {
+                this.zoom(false, false, 'bottom')
+            },
+
+            onLeftClick: function () {
+                this.zoom(false, false, 'left')
+            }
 
         })
 

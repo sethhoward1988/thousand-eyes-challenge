@@ -1,13 +1,14 @@
 requirejs.config({
 
-        baseUrl: 'js',
+    baseUrl: 'js',
     
     paths:{
         'text': 'vendor/text',
         'backbone': 'vendor/backbone',
+        'moment':'vendor/moment',
         'underscore': 'vendor/underscore',
         'jquery': 'vendor/jquery',
-        'jqueryui': 'vendor/jquery-ui',
+        'bootstrap': 'vendor/bootstrap',
         'd3': 'vendor/d3',
         'topojson': 'vendor/topojson'
     },
@@ -17,6 +18,10 @@ requirejs.config({
         'backbone': {
             deps: ['underscore', 'jquery'],
             exports: 'Backbone'
+        },
+
+        'bootstrap': {
+            deps: ['jquery']
         },
 
         'underscore':{
@@ -41,10 +46,6 @@ requirejs.config({
 
         'jquery':{
             exports: '$'
-        },
-
-        'jqueryui':{
-            deps:['jquery']
         }
     }
 });

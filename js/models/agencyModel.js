@@ -1,9 +1,9 @@
 
-define(['backbone', 'collections/vehicleCollection'], function(Backbone, VehicleCollection){
+define(['backbone', 'collections/vehicleCollection', 'collections/routeCollection'], function(Backbone, VehicleCollection, RouteCollection){
 
     var Agency = Backbone.Model.extend({
 
-        approvedAgencies: ['sf-muni', 'ucsf'],
+        approvedAgencies: ['sf-muni'], // ucsf
         
         initialize: function () {
             if(_.indexOf(this.approvedAgencies, this.get('tag')) != -1 ){
@@ -13,7 +13,6 @@ define(['backbone', 'collections/vehicleCollection'], function(Backbone, Vehicle
                 this.vehicleCollection.update()
             }
         }
-
     });
 
     return Agency;

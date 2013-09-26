@@ -16,8 +16,8 @@ define(['backbone',
             $(data).find('agency').each(function (index, agency) {
                 parsed.push({
                     tag: $(agency).attr('tag'),
-                    title: $(agency).attr('tag'),
-                    regionTitle: $(agency).attr('tag')
+                    title: $(agency).attr('title'),
+                    regionTitle: $(agency).attr('regionTitle')
                 })
             });
 
