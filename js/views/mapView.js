@@ -1,4 +1,4 @@
-define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'underscore', 'moment'], 
+define(['text!../templates/mapTemplate.html','backbone', 'd3', 'topojson', 'underscore', 'moment'], 
 
     function (mapTemplate) {
 

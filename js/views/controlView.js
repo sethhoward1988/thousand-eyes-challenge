@@ -1,4 +1,4 @@
-define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView', 'collections/routeCollection', 'text!templates/detailsTemplate.html'], 
+define(['backbone', 'text!../templates/controlTemplate.html', 'views/controlRowView', 'collections/routeCollection', 'text!../templates/detailsTemplate.html'], 
 
     function (Backbone, controlTemplate, ControlRowView, RouteCollection, detailsTemplate) {
 
