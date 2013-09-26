@@ -179,13 +179,14 @@ svg {
 }
 
 .filter-input {
+    border: none;
     padding:10px;
     font-size: 14px;
     width: 100%;
 }
 
 .filter {
-    border-bottom: 1px solid #ccc;
+    border: 1px solid #ccc;
 }
 
 .route-list {
@@ -201,6 +202,10 @@ svg {
     width: 100%;
 }
 
+.route-list table tbody tr:first-child td {
+    border-top: none;
+}
+
 .legend {
     height: 223px;
     width: 325px;
@@ -212,12 +217,13 @@ svg {
 }
 
 .legend h2{
+    margin-top: 0px;
     border-bottom: 1px solid #ccc;
 }
 
 .legend table {
     font-size: 13px;
-    height: 135px;
+    height: 155px;
 }
 
 .update-time, .current-bus-count {
