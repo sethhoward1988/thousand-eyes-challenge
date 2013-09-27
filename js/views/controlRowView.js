@@ -33,6 +33,11 @@ define(['backbone', 'text!templates/routeRowTemplate.html'],
 
             setBackgroundColor: function () {
                 this.$el.css('background-color', this.routeColor)
+                if(this.routeColor == '#9e0e40' || this.routeColor == '#008080') {
+                    this.$el.css('color', '#fff')
+                } else {
+                    this.$el.css('color', '#000')
+                }
             },
 
             onCheckboxChange: function (evt) {
