@@ -36,7 +36,7 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
             stopTooltipTemplate: _.template('<table>' +
                                                 '<tr><td colspan="2">{{ title }}</td></tr>' +
                                                 '<tr><td>Stop Id: </td><td>{{ id }}</td></tr>' +
-                                                '<tr><td colspan="2">Click for times</td></tr>' +
+                                                '<tr><td colspan="2">Click for upcoming times</td></tr>' +
                                             '</table>'),
 
             events: {

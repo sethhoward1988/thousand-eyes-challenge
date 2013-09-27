@@ -87,16 +87,20 @@ define(['backbone', 'text!templates/controlTemplate.html', 'views/controlRowView
                 var container = $('<div></div>')
                 var title = $('<h3></h3>').text(data.title)
                 container.append(title)
-                _.each(response, function (direction) {
-                    var directionHTML = $('<div></div>')
-                    var header = $('<h4></h4>').text(direction.title ? direction.title + ' Times' : 'Times')
-                    directionHTML.append(header)
-                    _.each(direction.times, function (time){
-                        var time = $('<span></span>').text(time.format('h:mm:ss a'))
-                        directionHTML.append(time)
+                if(response.length){
+                    _.each(response, function (direction) {
+                        var directionHTML = $('<div></div>')
+                        var header = $('<h4></h4>').text(direction.title ? direction.title + ' Times' : 'Times')
+                        directionHTML.append(header)
+                        _.each(direction.times, function (time){
+                            var time = $('<span></span>').text(time.format('h:mm:ss a'))
+                            directionHTML.append(time)
+                        })
+                        container.append(directionHTML)
                     })
-                    container.append(directionHTML)
-                })
+                } else {
+                    container.append($('<h4></h4>').text('No Upcoming Times'))
+                }
                 this.details.find('.window').empty().append(container)
             },
 
