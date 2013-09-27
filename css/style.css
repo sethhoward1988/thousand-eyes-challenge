@@ -63,10 +63,6 @@ path {
     stroke: black;
 }
 
-.neighborhood:hover {
-    opacity: .5;
-}
-
 .vehicle {
     fill: #242b32;
     stroke: #19af90;

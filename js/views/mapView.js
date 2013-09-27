@@ -64,7 +64,7 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
             // Map Setup ----------------------------------------------------
 
             setup: function () {
-                
+                var that = this
                 this.addAgency = _.bind(this.addAgency, this)
                 this.renderVehicles = _.chain(this.renderVehicles).bind(this).debounce(250).value()
                 this.getVehicleData = _.debounce(this.getVehicleData, 250)
@@ -78,13 +78,16 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 //Bind keyup for arrow events
                 $('body').on('keyup', this.onBodyKeyup)
 
+                //Settings for map zooming/panning
                 this.zoomLevel = 0
                 this.centered = null
+                this.currentx = this.width / 2;
+                this.currenty = this.height / 2;
+                this.k = 1
 
                 this.projection = d3.geo.mercator()
                     .center([-122.4358, 37.770])
                     .scale(210000)
-                    // .scale((1 << 22) / 2 / Math.PI)
                     .translate([this.width / 2, this.height / 2])
 
                 this.translation = this.projection.translate()
@@ -98,15 +101,39 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
 
                 this.$el.find('.svg-container').css({width: this.width, height: this.height})
 
+                var drag = d3.behavior.drag()
+                    .on("dragstart", function() {
+                        original = [that.currentx, that.currenty]
+                        m0 = [d3.event.sourceEvent.pageX, d3.event.sourceEvent.pageY]
+                    })
+                    .on("drag", function() {
+                      if (m0) {
+                        var m1 = [d3.event.sourceEvent.pageX, d3.event.sourceEvent.pageY]
+                        that.currentx = original[0] - ((m1[0] - m0[0])/that.k)
+                        that.currenty = original[1] - ((m1[1] - m0[1])/that.k)
+                      }
+                      that.translateMap()
+                    });
+
                 this.svg = d3.select(this.$el.find('.svg-container')[0]).append("svg")
                     .attr("width", this.width)
                     .attr("height", this.height)
+                    .on('dblclick', function () {
+                        if (m0) {
+                            var m1 = [d3.event.pageX, d3.event.pageY]
+                            that.currentx = original[0] - ((m1[0] - m0[0])/that.k)
+                            that.currenty = original[1] - ((m1[1] - m0[1])/that.k)
+                        }
+                        that.zoomIn()
+                    })
+                    .call(drag)
+                    
 
                 this.svg.append("rect")
                     .attr("class", "background")
                     .attr("width", this.width)
                     .attr("height", this.height)
-                    .on("click", this.onElementClick);
+                    .on("click", this.onElementClick)
 
                 this.g = this.svg.append('g')
             },
@@ -158,7 +185,6 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                             that.neighborhoodIndex = (that.neighborhoodIndex + 1 == that.neighborhoodColors.length ? 0 : that.neighborhoodIndex + 1)
                             return color;
                         })
-                        .on("click", this.onElementClick);
                 
                 // Needs to be created here so that vehicles appear on top of everything
                 this.plot = this.g.append('g').attr('class', 'route-plot')
@@ -189,7 +215,6 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                     .attr('cx', function (d) { return that.projection(d.geometry.coordinates)[0] })
                     .attr('cy', function (d) { return that.projection(d.geometry.coordinates)[1] })
                     .attr('r', 3)
-                    .on("click", this.onElementClick)
 
                 vehicleRendering.transition().duration(this.transitionDuration)
                     .style('opacity', 1)
@@ -209,7 +234,7 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
             renderPlot: function () {
                 var that = this
 
-                var plotRendering = this.vehicles.selectAll('.stop')
+                var plotRendering = this.plot.selectAll('.stop')
                     .data(this.currentPlot, function (d) { return d.title })
 
                 plotRendering.enter().append('polygon')
@@ -354,18 +379,17 @@ define(['text!templates/mapTemplate.html','backbone', 'd3', 'topojson', 'undersc
                 } else if (this.currenty > this.height){
                     this.currenty = this.height
                 }
-                this.translateMap()
+                this.translateMap(750)
             },
 
-            translateMap: function () {
+            translateMap: function (duration) {
                 var that = this
-                this.g.selectAll("path")
-                    .classed("active", this.centered && function(d) { return d === that.centered; });
+                // this.g.selectAll("path")
+                //     .classed("active", this.centered && function(d) { return d === that.centered; });
 
-                this.g.transition()
-                    .duration(750)
+                this.g.transition().duration(duration ? duration : 0)
                     .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")scale(" + this.k + ")translate(" + -this.currentx + "," + -this.currenty + ")")
-                    .style("stroke-width", 1.5 / this.k + "px");
+                    // .style("stroke-width", 1.5 / this.k + "px");
             },
 
             filterRoute: function (tag, include) {
